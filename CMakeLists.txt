@@ -74,6 +74,8 @@ option(PICKY_COMPILER "Enable picky compiler options" ON)
 option(BUILD_CURL_EXE "Set to ON to build curl executable." ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(ENABLE_ARES "Set to ON to enable c-ares support" OFF)
+option(ENABLE_TESTS "Set to OFF to disable testing" ON)
+
 if(WIN32)
   option(CURL_STATIC_CRT "Set to ON to build libcurl with static CRT on Windows (/MT)." OFF)
   option(ENABLE_INET_PTON "Set to OFF to prevent usage of inet_pton when building against modern SDKs while still requiring compatibility with older Windows versions, such as Windows XP, Windows Server 2003 etc." ON)
@@ -1050,10 +1052,12 @@ check_function_exists(mach_absolute_time HAVE_MACH_ABSOLUTE_TIME)
 check_symbol_exists(inet_pton      "${CURL_INCLUDES}" HAVE_INET_PTON)
 
 check_symbol_exists(fsetxattr "${CURL_INCLUDES}" HAVE_FSETXATTR)
-if(HAVE_FSETXATTR)
-  foreach(CURL_TEST HAVE_FSETXATTR_5 HAVE_FSETXATTR_6)
-    curl_internal_test(${CURL_TEST})
-  endforeach()
+if(ENABLE_TESTS)
+  if(HAVE_FSETXATTR)
+    foreach(CURL_TEST HAVE_FSETXATTR_5 HAVE_FSETXATTR_6)
+      curl_internal_test(${CURL_TEST})
+    endforeach()
+  endif()
 endif()
 
 # sigaction and sigsetjmp are special. Use special mechanism for
@@ -1076,44 +1080,46 @@ if(NOT HAVE_STRICMP)
   set(HAVE_LDAP_URL_PARSE 1)
 endif()
 
-# Do curl specific tests
-foreach(CURL_TEST
-    HAVE_FCNTL_O_NONBLOCK
-    HAVE_IOCTLSOCKET
-    HAVE_IOCTLSOCKET_CAMEL
-    HAVE_IOCTLSOCKET_CAMEL_FIONBIO
-    HAVE_IOCTLSOCKET_FIONBIO
-    HAVE_IOCTL_FIONBIO
-    HAVE_IOCTL_SIOCGIFADDR
-    HAVE_SETSOCKOPT_SO_NONBLOCK
-    HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
-    TIME_WITH_SYS_TIME
-    HAVE_O_NONBLOCK
-    HAVE_GETHOSTBYADDR_R_5
-    HAVE_GETHOSTBYADDR_R_7
-    HAVE_GETHOSTBYADDR_R_8
-    HAVE_GETHOSTBYADDR_R_5_REENTRANT
-    HAVE_GETHOSTBYADDR_R_7_REENTRANT
-    HAVE_GETHOSTBYADDR_R_8_REENTRANT
-    HAVE_GETHOSTBYNAME_R_3
-    HAVE_GETHOSTBYNAME_R_5
-    HAVE_GETHOSTBYNAME_R_6
-    HAVE_GETHOSTBYNAME_R_3_REENTRANT
-    HAVE_GETHOSTBYNAME_R_5_REENTRANT
-    HAVE_GETHOSTBYNAME_R_6_REENTRANT
-    HAVE_IN_ADDR_T
-    HAVE_BOOL_T
-    STDC_HEADERS
-    RETSIGTYPE_TEST
-    HAVE_INET_NTOA_R_DECL
-    HAVE_INET_NTOA_R_DECL_REENTRANT
-    HAVE_GETADDRINFO
-    HAVE_FILE_OFFSET_BITS
-    HAVE_VARIADIC_MACROS_C99
-    HAVE_VARIADIC_MACROS_GCC
-    )
-  curl_internal_test(${CURL_TEST})
-endforeach()
+if(ENABLE_TESTS)
+  # Do curl specific tests
+  foreach(CURL_TEST
+      HAVE_FCNTL_O_NONBLOCK
+      HAVE_IOCTLSOCKET
+      HAVE_IOCTLSOCKET_CAMEL
+      HAVE_IOCTLSOCKET_CAMEL_FIONBIO
+      HAVE_IOCTLSOCKET_FIONBIO
+      HAVE_IOCTL_FIONBIO
+      HAVE_IOCTL_SIOCGIFADDR
+      HAVE_SETSOCKOPT_SO_NONBLOCK
+      HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+      TIME_WITH_SYS_TIME
+      HAVE_O_NONBLOCK
+      HAVE_GETHOSTBYADDR_R_5
+      HAVE_GETHOSTBYADDR_R_7
+      HAVE_GETHOSTBYADDR_R_8
+      HAVE_GETHOSTBYADDR_R_5_REENTRANT
+      HAVE_GETHOSTBYADDR_R_7_REENTRANT
+      HAVE_GETHOSTBYADDR_R_8_REENTRANT
+      HAVE_GETHOSTBYNAME_R_3
+      HAVE_GETHOSTBYNAME_R_5
+      HAVE_GETHOSTBYNAME_R_6
+      HAVE_GETHOSTBYNAME_R_3_REENTRANT
+      HAVE_GETHOSTBYNAME_R_5_REENTRANT
+      HAVE_GETHOSTBYNAME_R_6_REENTRANT
+      HAVE_IN_ADDR_T
+      HAVE_BOOL_T
+      STDC_HEADERS
+      RETSIGTYPE_TEST
+      HAVE_INET_NTOA_R_DECL
+      HAVE_INET_NTOA_R_DECL_REENTRANT
+      HAVE_GETADDRINFO
+      HAVE_FILE_OFFSET_BITS
+      HAVE_VARIADIC_MACROS_C99
+      HAVE_VARIADIC_MACROS_GCC
+      )
+    curl_internal_test(${CURL_TEST})
+  endforeach()
+endif()
 
 if(HAVE_FILE_OFFSET_BITS)
   set(_FILE_OFFSET_BITS 64)
@@ -1129,12 +1135,14 @@ set(CMAKE_EXTRA_INCLUDE_FILES "")
 
 set(CMAKE_REQUIRED_FLAGS)
 
-foreach(CURL_TEST
-    HAVE_GLIBC_STRERROR_R
-    HAVE_POSIX_STRERROR_R
-    )
-  curl_internal_test(${CURL_TEST})
-endforeach()
+if(ENABLE_TESTS)
+  foreach(CURL_TEST
+      HAVE_GLIBC_STRERROR_R
+      HAVE_POSIX_STRERROR_R
+      )
+    curl_internal_test(${CURL_TEST})
+  endforeach()
+endif()
 
 # Check for reentrant
 foreach(CURL_TEST
@@ -1172,11 +1180,13 @@ if(HAVE_INET_NTOA_R_DECL_REENTRANT)
   set(NEED_REENTRANT 1)
 endif()
 
-# Check clock_gettime(CLOCK_MONOTONIC, x) support
-curl_internal_test(HAVE_CLOCK_GETTIME_MONOTONIC)
+if(ENABLE_TESTS)
+  # Check clock_gettime(CLOCK_MONOTONIC, x) support
+  curl_internal_test(HAVE_CLOCK_GETTIME_MONOTONIC)
 
-# Check compiler support of __builtin_available()
-curl_internal_test(HAVE_BUILTIN_AVAILABLE)
+  # Check compiler support of __builtin_available()
+  curl_internal_test(HAVE_BUILTIN_AVAILABLE)
+endif()
 
 # Some other minor tests
 
